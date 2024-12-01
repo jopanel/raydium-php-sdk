@@ -1,5 +1,5 @@
 {
-    "name": "josephopanel/raydium-sdk",
+    "name": "josephopanel/raydium-php-sdk",
     "description": "A PHP SDK for interacting with Raydium API.",
     "type": "library",
     "require": {
@@ -25,5 +25,6 @@
     ],
     "require-dev": {
         "phpunit/phpunit": "^10.0"
-    }
+    },
+    "version": "1.0.0"
 }
