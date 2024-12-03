@@ -40,7 +40,7 @@ class Mint
     public function getMintInfo(array $ids): array
     {
         $response = $this->httpClient->get("{$this->baseUrl}/mint/ids", [
-            'query' => ['ids' => implode(',', $ids)]
+            'query' => ['mints' => implode(',', $ids)]
         ]);
         $data = json_decode($response->getBody()->getContents(), true);
 
@@ -57,7 +57,7 @@ class Mint
     public function getMintPrice(array $ids): array
     {
         $response = $this->httpClient->get("{$this->baseUrl}/mint/price", [
-            'query' => ['ids' => implode(',', $ids)]
+            'query' => ['mints' => implode(',', $ids)]
         ]);
         $data = json_decode($response->getBody()->getContents(), true);
 
