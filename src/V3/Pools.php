@@ -3,17 +3,20 @@
 namespace JosephOpanel\RaydiumSDK\V3;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
+use Psr\Log\LoggerInterface;
 
 class Pools
 {
     private Client $httpClient;
     private string $baseUrl;
+    private ?LoggerInterface $logger;
 
-    public function __construct(string $baseUrl = 'https://api-v3.raydium.io', ?Client $httpClient = null)
+    public function __construct(string $baseUrl = 'https://api-v3.raydium.io', ?Client $httpClient = null, ?LoggerInterface $logger = null)
     {
-        $this->baseUrl = $baseUrl;
-        $this->httpClient = $httpClient ?? new Client();
+        $this->baseUrl = rtrim($baseUrl, '/'); // Ensure no trailing slash
+        $this->httpClient = $httpClient ?? new Client(['timeout' => 10]); // Add default timeout
+        $this->logger = $logger; // Optional logger for error logging
     }
 
     /**
@@ -21,16 +24,10 @@ class Pools
      *
      * @param array $ids An array of pool IDs to query.
      * @return array An array of pool details for the specified IDs.
-     * @throws GuzzleException
      */
     public function getPoolInfoByIds(array $ids): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/info/ids", [
-            'query' => ['ids' => implode(',', $ids)]
-        ]);
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['pools'] ?? [];
+        return $this->makeRequest('/pools/info/ids', ['ids' => implode(',', $ids)], 'pools', []);
     }
 
     /**
@@ -38,30 +35,20 @@ class Pools
      *
      * @param array $lpMints An array of LP mint addresses to query.
      * @return array An array of pool details for the specified LP mints.
-     * @throws GuzzleException
      */
     public function getPoolInfoByLPs(array $lpMints): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/info/lps", [
-            'query' => ['lpMints' => implode(',', $lpMints)]
-        ]);
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['pools'] ?? [];
+        return $this->makeRequest('/pools/info/lps', ['lpMints' => implode(',', $lpMints)], 'pools', []);
     }
 
     /**
      * Fetch information for all pools.
      *
      * @return array An array of details for all pools on the platform.
-     * @throws GuzzleException
      */
     public function getAllPoolsInfo(): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/info/list");
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['pools'] ?? [];
+        return $this->makeRequest('/pools/info/list', [], 'pools', []);
     }
 
     /**
@@ -69,16 +56,10 @@ class Pools
      *
      * @param array $tokenMints An array of token mint addresses to query.
      * @return array An array of pool details for the specified token mints.
-     * @throws GuzzleException
      */
     public function getPoolInfoByTokenMint(array $tokenMints): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/info/mint", [
-            'query' => ['tokenMints' => implode(',', $tokenMints)]
-        ]);
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['pools'] ?? [];
+        return $this->makeRequest('/pools/info/mint', ['tokenMints' => implode(',', $tokenMints)], 'pools', []);
     }
 
     /**
@@ -86,16 +67,10 @@ class Pools
      *
      * @param array $ids An array of pool IDs to query.
      * @return array An array of pool key details for the specified pool IDs.
-     * @throws GuzzleException
      */
     public function getPoolKeysByIds(array $ids): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/key/ids", [
-            'query' => ['ids' => implode(',', $ids)]
-        ]);
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['keys'] ?? [];
+        return $this->makeRequest('/pools/key/ids', ['ids' => implode(',', $ids)], 'keys', []);
     }
 
     /**
@@ -103,16 +78,10 @@ class Pools
      *
      * @param array $ids An array of pool IDs to query.
      * @return array An array of liquidity history for the specified pools.
-     * @throws GuzzleException
      */
     public function getPoolLiquidityHistory(array $ids): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/line/liquidity", [
-            'query' => ['ids' => implode(',', $ids)]
-        ]);
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['liquidityHistory'] ?? [];
+        return $this->makeRequest('/pools/line/liquidity', ['ids' => implode(',', $ids)], 'liquidityHistory', []);
     }
 
     /**
@@ -120,19 +89,52 @@ class Pools
      *
      * @param array $ids An array of pool IDs to query.
      * @return array An array of position history for the specified pools.
-     * @throws GuzzleException
      */
     public function getPoolPositionHistory(array $ids): array
     {
-        $response = $this->httpClient->get("{$this->baseUrl}/pools/line/position", [
-            'query' => ['ids' => implode(',', $ids)]
-        ]);
-        $data = json_decode($response->getBody()->getContents(), true);
-
-        return $data['positionHistory'] ?? [];
+        return $this->makeRequest('/pools/line/position', ['ids' => implode(',', $ids)], 'positionHistory', []);
     }
 
+    /**
+     * Make an HTTP GET request and return the processed response.
+     *
+     * @param string $endpoint The API endpoint to call.
+     * @param array $queryParams Query parameters to include in the request.
+     * @param string|null $key Optional key to extract from the response.
+     * @param mixed $default The default value to return if the key or response is not found.
+     * @return mixed The processed response or default value.
+     */
+    private function makeRequest(string $endpoint, array $queryParams, ?string $key, $default)
+    {
+        try {
+            $response = $this->httpClient->get("{$this->baseUrl}{$endpoint}", [
+                'query' => $queryParams,
+                'headers' => ['accept' => 'application/json'],
+            ]);
 
+            $data = json_decode($response->getBody()->getContents(), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \RuntimeException('Invalid JSON response');
+            }
 
+            return $key ? ($data[$key] ?? $default) : ($data ?? $default);
+        } catch (RequestException $e) {
+            $this->logError("Error fetching data from {$endpoint}: " . $e->getMessage());
+            return $default;
+        }
+    }
 
+    /**
+     * Log an error message if a logger is available.
+     *
+     * @param string $message
+     */
+    private function logError(string $message): void
+    {
+        if ($this->logger) {
+            $this->logger->error($message);
+        } else {
+            error_log($message); // Fallback to error_log
+        }
+    }
 }

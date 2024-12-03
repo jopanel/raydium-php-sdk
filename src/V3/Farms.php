@@ -43,7 +43,7 @@ class Farms
     public function getFarmInfoByLP(array $lpMints): array
     {
         $response = $this->httpClient->get("{$this->baseUrl}/farms/info/lp", [
-            'query' => ['lpMints' => implode(',', $lpMints)]
+            'query' => ['lp' => implode(',', $lpMints)]
         ]);
         $data = json_decode($response->getBody()->getContents(), true);
 

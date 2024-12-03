@@ -44,7 +44,7 @@ class FarmsTest extends TestCase
             ]
         ];
         $mockClient->method('get')
-            ->with('https://api-v3.raydium.io/farms/info/lp', ['query' => ['lpMints' => 'lp1,lp2']])
+            ->with('https://api-v3.raydium.io/farms/info/lp', ['query' => ['lp' => 'lp1,lp2']])
             ->willReturn(new Response(200, [], json_encode($mockResponse)));
 
         $farms = new Farms(httpClient: $mockClient);
