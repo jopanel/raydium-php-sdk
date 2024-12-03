@@ -13,7 +13,6 @@ class MintTest extends TestCase
 {
     public function testGetList(): void
     {
-        // Mock the Guzzle client
         $mockClient = $this->createMock(Client::class);
         $mockResponse = [
             'mints' => [
@@ -22,6 +21,13 @@ class MintTest extends TestCase
             ]
         ];
         $mockClient->method('get')
+            ->with(
+                'https://api-v3.raydium.io/mint/list',
+                [
+                    'query' => [], // Include the empty 'query' key
+                    'headers' => ['accept' => 'application/json']
+                ]
+            )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($mockResponse)));
 
         $mint = new Mint(httpClient: $mockClient);
@@ -48,7 +54,6 @@ class MintTest extends TestCase
 
     public function testGetMintInfo(): void
     {
-        // Mock the Guzzle client
         $mockClient = $this->createMock(Client::class);
         $mockResponse = [
             'mints' => [
@@ -59,7 +64,7 @@ class MintTest extends TestCase
         $mockClient->method('get')
             ->with(
                 'https://api-v3.raydium.io/mint/ids',
-                ['query' => ['mints' => 'mint1,mint2']]
+                ['query' => ['mints' => 'mint1,mint2'], 'headers' => ['accept' => 'application/json']]
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($mockResponse)));
 
@@ -87,10 +92,9 @@ class MintTest extends TestCase
 
     public function testGetMintPrice(): void
     {
-        // Mock the Guzzle client
         $mockClient = $this->createMock(Client::class);
         $mockResponse = [
-            'prices' => [
+            'data' => [
                 'mint1' => 1.25,
                 'mint2' => 0.85,
             ]
@@ -98,7 +102,7 @@ class MintTest extends TestCase
         $mockClient->method('get')
             ->with(
                 'https://api-v3.raydium.io/mint/price',
-                ['query' => ['mints' => 'mint1,mint2']]
+                ['query' => ['mints' => 'mint1,mint2'], 'headers' => ['accept' => 'application/json']]
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($mockResponse)));
 
