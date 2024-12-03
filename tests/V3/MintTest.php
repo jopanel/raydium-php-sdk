@@ -42,7 +42,7 @@ class MintTest extends TestCase
             ]
         ];
         $mockClient->method('get')
-            ->with('https://api-v3.raydium.io/mint/ids', ['query' => ['ids' => 'mint1,mint2']])
+            ->with('https://api-v3.raydium.io/mint/ids', ['query' => ['mints' => 'mint1,mint2']])
             ->willReturn(new Response(200, [], json_encode($mockResponse)));
 
         $mint = new Mint(httpClient: $mockClient);
@@ -65,7 +65,7 @@ class MintTest extends TestCase
             ]
         ];
         $mockClient->method('get')
-            ->with('https://api-v3.raydium.io/mint/price', ['query' => ['ids' => 'mint1,mint2']])
+            ->with('https://api-v3.raydium.io/mint/price', ['query' => ['mints' => 'mint1,mint2']])
             ->willReturn(new Response(200, [], json_encode($mockResponse)));
 
         $mint = new Mint(httpClient: $mockClient);
